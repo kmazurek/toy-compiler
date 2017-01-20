@@ -4,56 +4,53 @@
 #include <stdlib.h>
 
 /* funkcje i zmienne z flexa */
-int yylex();
-void yyerror( char* );
-extern char* yytext;
+extern int yylex();
+extern int yyparse();
+extern FILE *yyin;
 
+void yyerror(char *s);
 %}
 
 %union {
-  int		i;
+  int 	int_value;
+  char* string_value;
+
 }
 
-%left '+' '-'
-%left '*' '/' '%'
-%left UNARY_MINUS UNARY_PLUS
-
-
-%token <i>	NUM
-%token <i>	SEP
-
-%type <i>	num num_expr expr
-
-%start expr
+%token <int_value> INT
+%token <string_value> STRING
 
 %%
 
-expr		: expr num_expr SEP { printf("wynik = %d\n", $2);}
-		| { /* empty */ }
-		;
-num		: NUM { $$=$1;}
-		;
-num_expr	: num { $$=$1;}
-		| '-' num_expr %prec UNARY_MINUS { $$=-$2;}
-		| '+' num_expr %prec UNARY_PLUS  { $$=$2;}
-		| num_expr '+' num_expr { $$=$1+$3;}
-		| num_expr '-' num_expr { $$=$1-$3;}
-		| num_expr '*' num_expr { $$=$1*$3;}
-		| num_expr '/' num_expr { $$=$1/$3;}
-		| num_expr '%' num_expr { $$=$1%$3;}
-		| '(' num_expr ')' { $$=$2;}
-		;
+snazzle:
+	INT snazzle      { fprintf(stdout, "found an int: '%d'\n", $1); }
+	| STRING snazzle { fprintf(stdout, "found a string: '%s'\n", $1); }
+	| INT            { fprintf(stdout, "found an int: '%d'\n", $1); }
+	| STRING         { fprintf(stdout, "found a string: '%s'\n", $1); }
+	;
 
 %%
 
-void yyerror( char* s )
+void yyerror(char* s)
 {
-  fprintf(stderr,"niespodziewany token: '%s'\n",yytext);
+  fprintf(stderr, "unexpected token\n");
   exit(1);
 }
 
 int main() {
-   
-   yyparse();
-   return 0;
+	// open a file handle to a particular file:
+	FILE *myfile = fopen("test_file", "r");
+	// make sure it's valid:
+	if (!myfile) {
+		fprintf(stderr, "failed to open test_file\n");
+		return -1;
+	}
+	// set lex to read from it instead of defaulting to STDIN:
+	yyin = myfile;
+
+	do {
+		yyparse();
+	} while (!feof(yyin));
+
+	return 0;
 }
