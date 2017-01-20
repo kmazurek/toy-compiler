@@ -1,54 +1,31 @@
 %{
-	// This is the definition section. Here's where we put all the headers etc.
-	#include "aug_parser.h"
-	extern int yylval;
+#include "aug_parser.h"
+
+/* funkcja konwertuj±ca napis na liczbê */
+int to_int();
+
 %}
 
-%x COMMENT
+OP	"+"|"-"|"*"|"/"|"%"
+BRACKET	"("|")"
+DIGIT	[0-9]
+SEPARATOR ";"
+%%
 
-sl_comment_open "//"
-ml_comment_open "/*"
-ml_comment_close "*/"
-
-digit [0-9]
-identifier [a-zA-Z][a-zA-Z{digit}]*
-sign_opt ("+"|"-")?
-number {sign_opt}({digit}+)
-
-num_operator "+" | "-" | "*" | "/" | "%"
-bool_operator "and" | "or"
-relation_operator "=" | "<" | "<=" | ">" | ">="
-
-whitespace [ \t]+
-EOL \n
+{OP}		return yytext[0];
+{BRACKET}	return yytext[0];
+{DIGIT}+	return to_int();
+{SEPARATOR}	return SEP;
+\n
 
 %%
 
-{sl_comment_open}.* 		{}
-{ml_comment_open} 			{ BEGIN(COMMENT); }
-<COMMENT>{ml_comment_close} { BEGIN(INITIAL); }
-<COMMENT>(.|{EOL}) 			{}
-
-{number}					{ yylval = atoi(yytext); return NUMBER; }
-{whitespace}				;
-\n 							return 0;
-. 							return yytext[0];
-
-%%
-
-int main(int argc, char** argv) {
-	if (argc > 1) {
-		FILE *file;
-		file = fopen(argv[1], "r");
-
-		if (!file) {
-			fprintf(stderr,"could not open %s\n",argv[1]);
-			exit(1);
-		}
-
-		yyin = file;
-	}
-
-	yylex();
-	return 0;
-}
+int to_int()
+{
+  int i=0;
+  
+  yylval.i=0;
+  for(;i<strlen(yytext);i++)
+    if(yytext[i]!='_') yylval.i=yylval.i*10+yytext[i]-'0';
+  return NUM;
+}	  
