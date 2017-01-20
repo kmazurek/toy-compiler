@@ -1,0 +1,11 @@
+/* This is a comment
+	which spans multiple lines
+	and does nothing at all */
+
+Some stuff which should not be removed
+
+/* Another comment */
+
+// Single line comment
+
+And some more stuff
