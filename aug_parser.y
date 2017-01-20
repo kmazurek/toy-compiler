@@ -23,8 +23,8 @@ void yyerror(char *s);
 %%
 
 snazzle:
-	INT snazzle      { fprintf(stdout, "found an int: '%d'\n", $1); }
-	| STRING snazzle { fprintf(stdout, "found a string: '%s'\n", $1); }
+	snazzle INT      { fprintf(stdout, "found an int: '%d'\n", $2); }
+	| snazzle STRING { fprintf(stdout, "found a string: '%s'\n", $2); }
 	| INT            { fprintf(stdout, "found an int: '%d'\n", $1); }
 	| STRING         { fprintf(stdout, "found a string: '%s'\n", $1); }
 	;
