@@ -13,21 +13,21 @@ void yyerror(char *err_msg);
 %}
 
 %union {
-  int 	int_value;
+  signed long long int 	int_value;
   char* string_value;
 
 }
 
-%token <int_value> INT
-%token <string_value> STRING
+%token <int_value> NUM
+%token <string_value> IDENT
 
 %%
 
 snazzle:
-	snazzle INT      { fprintf(stdout, "found an int: '%d'\n", $2); }
-	| snazzle STRING { fprintf(stdout, "found a string: '%s'\n", $2); }
-	| INT            { fprintf(stdout, "found an int: '%d'\n", $1); }
-	| STRING         { fprintf(stdout, "found a string: '%s'\n", $1); }
+	snazzle NUM      	{ fprintf(stdout, "found a number: %lld\n", $2); }
+	| snazzle IDENT		{ fprintf(stdout, "found a string: %s\n", $2); }
+	| NUM            	{ fprintf(stdout, "found a number: %lld\n", $1); }
+	| IDENT         	{ fprintf(stdout, "found a string: %s\n", $1); }
 	;
 
 %%

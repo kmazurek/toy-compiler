@@ -2,7 +2,10 @@
 	which spans multiple lines
 	and does nothing at all */
 
-Some stuff which should not be removed
+Some stuff which should not be removed 13 22
+
+15
+-8
 
 /* Another comment */
 
