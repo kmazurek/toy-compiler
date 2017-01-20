@@ -6,9 +6,10 @@
 /* funkcje i zmienne z flexa */
 extern int yylex();
 extern int yyparse();
+
 extern FILE *yyin;
 
-void yyerror(char *s);
+void yyerror(char *err_msg);
 %}
 
 %union {
@@ -31,22 +32,24 @@ snazzle:
 
 %%
 
-void yyerror(char* s)
+void yyerror(char* err_msg)
 {
-  fprintf(stderr, "unexpected token\n");
+  fprintf(stderr, "Parse error: %s\n", err_msg);
   exit(1);
 }
 
-int main() {
-	// open a file handle to a particular file:
-	FILE *myfile = fopen("test_file", "r");
-	// make sure it's valid:
-	if (!myfile) {
-		fprintf(stderr, "failed to open test_file\n");
-		return -1;
+int main(int argc, char** args) {
+	FILE* file;
+
+	if (argc == 2) {
+		file = fopen(args[1], "r");
+		if (!file) {
+			fprintf(stderr, "failed to open file %s\n", args[1]);
+			return -1;
+		}
 	}
-	// set lex to read from it instead of defaulting to STDIN:
-	yyin = myfile;
+
+	yyin = file;
 
 	do {
 		yyparse();
