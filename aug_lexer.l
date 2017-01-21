@@ -11,8 +11,7 @@ ml_comment_open "/*"
 ml_comment_close "*/"
 
 digit			[0-9]
-sign_opt 		("+"|"-")?
-number 			{sign_opt}({digit}+)
+number 			{digit}+
 
 identifier 		[a-zA-Z][a-zA-Z{digit}]*
 endl 			\n
