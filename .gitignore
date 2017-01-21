@@ -1,0 +1,8 @@
+output
+test_file*
+aug_compiler
+*.c
+*.o
+*.h
+*~
+*.output
