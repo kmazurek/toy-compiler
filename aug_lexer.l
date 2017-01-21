@@ -1,6 +1,8 @@
 %{
 #include "aug_parser.h"
 
+extern char* strdup(char* s);
+
 int line_number = 1;
 %}
 
@@ -52,7 +54,7 @@ assignment 		":="
 "true"							{ return TRUE_VAL; }
 "false"							{ return FALSE_VAL; }
 
-{num_operator}					{ return yytext[0]; }
+{num_operator}					{ yylval.num_oper = yytext[0]; return NUM_OPERATOR; }
 {bool_relation}					{ return yytext[0]; }
 {bracket}						{ return yytext[0]; }
 {separator}						{ return SEPARATOR; }
