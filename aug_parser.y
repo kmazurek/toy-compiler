@@ -28,7 +28,7 @@ extern int line_number;
 %token <string_value> IDENT
 
 %left '+' '-' '*' '/' '%'
-%left "=" "<" ">" "<=" ">="
+%left '=' '<' '>'
 %left '(' ')'
 
 %start program
@@ -58,7 +58,7 @@ num_expression: NUMBER
 ;
 
 bool_operator: AND | OR;
-bool_relation: "=" | "<" | ">" | "<=" | ">=";
+bool_relation: '=' | '<' | '>';
 
 bool_expression: TRUE_VAL
 	| FALSE_VAL
