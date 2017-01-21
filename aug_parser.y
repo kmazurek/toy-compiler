@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+extern char* strdup(char* s);
+
 void yyerror(const char* err_msg);
 extern int yylex();
 extern int yyparse();
@@ -23,9 +25,9 @@ struct expr {
     char* name;
     struct {
       char operator;
-      struct expr *arg1;
-      struct expr *arg2;
-    } operation;
+      struct expr* arg1;
+      struct expr* arg2;
+    } op;
   };
 };
 
@@ -49,7 +51,7 @@ unsigned hash(char* s) {
     return hashval % HASHSIZE;
 }
 
-struct kv_pair* lookup(char* s) {
+struct kv_pair* hashtab_lookup(char* s) {
     struct kv_pair* kv;
     for (kv = hashtab[hash(s)]; kv != NULL; kv = kv->next)
         if (strcmp(s, kv->key) == 0)
@@ -58,10 +60,10 @@ struct kv_pair* lookup(char* s) {
     return NULL;
 }
 
-struct kv_pair* put(char* key, char* value) {
+struct kv_pair* hashtab_put(char* key, long long int value) {
     struct kv_pair* kv;
     unsigned hashval;
-    if ((kv = lookup(key)) == NULL) {
+    if ((kv = hashtab_lookup(key)) == NULL) {
         kv = (struct kv_pair *) malloc(sizeof(*kv));
 
         if (kv == NULL || (kv->key = strdup(key)) == NULL)
@@ -69,6 +71,7 @@ struct kv_pair* put(char* key, char* value) {
 
         hashval = hash(key);
         kv->next = hashtab[hashval];
+        kv->value = value;
         hashtab[hashval] = kv;
 
         ++var_number;
@@ -90,8 +93,10 @@ void delete_expr(struct expr*); // usuñ drzewo wyra¿enia (rekursywnie)
 %}
 
 %union {
-  long long int value;
-  char* string_value;
+	char num_oper;
+	long long int value;
+	char* string_value;
+	struct expr* expr_value;
 }
 
 %error-verbose
@@ -100,6 +105,9 @@ void delete_expr(struct expr*); // usuñ drzewo wyra¿enia (rekursywnie)
 
 %token <value> NUMBER TRUE_VAL FALSE_VAL
 %token <string_value> IDENT
+%token <num_oper> NUM_OPERATOR
+
+%type <expr_value> num_expression
 
 %left '+' '-' '*' '/' '%'
 %left '=' '<' '>'
@@ -124,11 +132,23 @@ instruction: EXIT SEPARATOR
 	| output_statement SEPARATOR
 ;
 
-num_operator: '+' | '-' | '*' | '/' | '%';
-
-num_expression: NUMBER
-	| num_expression num_operator num_expression
-	| IDENT
+num_expression: NUMBER {
+		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$->type = constant;
+		$$->value = $1;
+	}
+	| num_expression NUM_OPERATOR num_expression {
+		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$->type = operation;
+		$$->op.arg1 = $1;
+		$$->op.operator = $2;
+		$$->op.arg2 = $3;
+	}
+	| IDENT {
+		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$->type = identifier;
+		$$->name = $1;
+	}
 ;
 
 bool_operator: AND | OR;
@@ -149,18 +169,16 @@ if_statement: IF bool_expression THEN instructions
 	| IF bool_expression THEN instructions ELSE instructions
 ;
 
-assign_statement: IDENT ASSIGN num_expression;
+assign_statement: IDENT ASSIGN num_expression
+	{
+		long long int value = evaluate($3);
+		hashtab_put($1, value);
+	}
+;
 
 input_statement: READ IDENT { fprintf(output_file, "READ\n"); };
 
 output_statement: PRINT num_expression { fprintf(output_file, "PRINT\n"); };
-
-// snazzle:
-// 	snazzle NUMBER      	{ fprintf(stdout, "found a number: %lld\n", $2); }
-// 	| snazzle IDENT			{ fprintf(stdout, "found a string: %s\n", $2); }
-// 	| NUMBER            	{ fprintf(stdout, "found a number: %lld\n", $1); }
-// 	| IDENT         		{ fprintf(stdout, "found a string: %s\n", $1); }
-// 	;
 
 %%
 
@@ -169,32 +187,32 @@ void yyerror(const char* err_msg) {
   exit(1);
 }
 
-// int evaluate(struct expr* expr) {
-// 	if (expr == NULL) {
-// 		fprintf(stderr, "Incorrect expression on line %d\n", line_number);
-// 		exit(1);
-// 	}
+int evaluate(struct expr* expr) {
+	if (expr == NULL) {
+		fprintf(stderr, "Incorrect expression on line %d\n", line_number);
+		exit(1);
+	}
 
-// 	int lhs_arg=0, rhs_arg=0;
+	int lhs_arg=0, rhs_arg=0;
 
-// 	switch (expr->type) {
-// 		case constant:
-// 			return expr->value;
-// 		case identifier:
-// 			// get value from dictionary
-// 		case operation:
-// 			if(expr->operation.arg1 != NULL) lhs_arg=evaluate(expr->operation.arg1);
-// 	 		if(expr->operation.arg2 != NULL) rhs_arg=evaluate(expr->operation.arg2);
+	switch (expr->type) {
+		case constant:
+			return expr->value;
+		case identifier:
+			return (hashtab_lookup(expr->name))->value;
+		case operation:
+			if(expr->op.arg1 != NULL) lhs_arg=evaluate(expr->op.arg1);
+	 		if(expr->op.arg2 != NULL) rhs_arg=evaluate(expr->op.arg2);
 
-// 			switch (expr->operation.operator) {
-// 				case '+': return lhs_arg+rhs_arg;
-// 	   			case '-': return lhs_arg+rhs_arg;
-// 	   			case '*': return lhs_arg+rhs_arg;
-// 	   			case '/': return lhs_arg+rhs_arg;
-// 	   			case '%': return lhs_arg+rhs_arg;
-// 			}
-// 	}
-// }
+			switch (expr->op.operator) {
+				case '+': return lhs_arg+rhs_arg;
+	   			case '-': return lhs_arg-rhs_arg;
+	   			case '*': return lhs_arg*rhs_arg;
+	   			case '/': return lhs_arg/rhs_arg;
+	   			case '%': return lhs_arg%rhs_arg;
+			}
+	}
+}
 
 int main(int argc, char** args) {
 	FILE* input_file;
