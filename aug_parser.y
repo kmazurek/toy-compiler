@@ -9,30 +9,79 @@ extern int yyparse();
 
 extern FILE *yyin;
 
-void yyerror(char *err_msg);
+void yyerror(const char *err_msg);
 %}
 
 %union {
   signed long long int 	int_value;
   char* string_value;
-
 }
 
-%token <int_value> NUM
+%error-verbose
+
+%token <int_value> NUMBER
 %token <string_value> IDENT
+%token AND ASSIGN DO ELSE END EXIT IF NOT PRINT READ SEPARATOR START THEN WHILE
 
 %%
 
-snazzle:
-	snazzle NUM      	{ fprintf(stdout, "found a number: %lld\n", $2); }
-	| snazzle IDENT		{ fprintf(stdout, "found a string: %s\n", $2); }
-	| NUM            	{ fprintf(stdout, "found a number: %lld\n", $1); }
-	| IDENT         	{ fprintf(stdout, "found a string: %s\n", $1); }
-	;
+program: instructions;
+
+while_statement: WHILE expression DO instructions
+	| DO instructions WHILE expression
+;
+
+if_statement: IF expression THEN instructions
+	| IF expression THEN instructions ELSE instructions
+;
+
+assign_statement: IDENT ASSIGN expression;
+
+input_statement: READ IDENT;
+
+output_statement: PRINT expression;
+
+instruction: EXIT
+	| START instruction_chain END
+	| while_statement
+	| if_statement
+	| assign_statement
+	| input_statement
+	| output_statement
+;
+
+instruction_chain: instruction_chain instruction SEPARATOR
+	| instruction
+;
+
+instructions:
+	| instructions instruction SEPARATOR
+;
+
+expression: NUMBER
+	| IDENT
+	| expression '=' expression
+	| expression '<' expression
+	| expression '>' expression
+	| expression "<=" expression
+	| expression ">=" expression
+	| expression '+' expression
+	| expression '-' expression
+	| expression '*' expression
+	| expression '/' expression
+	| expression '%' expression
+;
+
+// snazzle:
+// 	snazzle NUMBER      	{ fprintf(stdout, "found a number: %lld\n", $2); }
+// 	| snazzle IDENT			{ fprintf(stdout, "found a string: %s\n", $2); }
+// 	| NUMBER            	{ fprintf(stdout, "found a number: %lld\n", $1); }
+// 	| IDENT         		{ fprintf(stdout, "found a string: %s\n", $1); }
+// 	;
 
 %%
 
-void yyerror(char* err_msg)
+void yyerror(const char* err_msg)
 {
   fprintf(stderr, "Parse error: %s\n", err_msg);
   exit(1);

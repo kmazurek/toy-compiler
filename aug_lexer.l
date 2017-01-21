@@ -21,6 +21,7 @@ separator ";"
 identifier [a-zA-Z][a-zA-Z{digit}]*
 endl \n
 whitespace [ \t]+
+assignment ":="
 
 %%
 
@@ -29,8 +30,10 @@ whitespace [ \t]+
 <COMMENT>{ml_comment_close} { BEGIN(INITIAL); }
 <COMMENT>(.|{endl}) 			{}
 
-[ \t\n]           		;
-{number}+ 				{ yylval.int_value = atoi(yytext); return NUM; }
+{number}+ 				{ yylval.int_value = atoi(yytext); return NUMBER; }
+{assignment}			{ return ASSIGN; }
 {identifier}      		{ yylval.string_value = strdup(yytext); return IDENT; }
+{separator}				{ return SEPARATOR; }
+[ \t\n]           		;
 
 %%
