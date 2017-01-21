@@ -37,17 +37,17 @@ extern int line_number;
 
 program: instructions;
 
-instructions: instructions instruction SEPARATOR
+instructions: instructions instruction
 	| instruction
 ;
 
-instruction: EXIT
-	| START instructions END
+instruction: EXIT SEPARATOR
+	| START instructions END SEPARATOR
 	| while_statement
 	| if_statement
-	| assign_statement
-	| input_statement
-	| output_statement
+	| assign_statement SEPARATOR
+	| input_statement SEPARATOR
+	| output_statement SEPARATOR
 ;
 
 num_operator: '+' | '-' | '*' | '/' | '%';
@@ -75,7 +75,7 @@ if_statement: IF bool_expression THEN instructions
 	| IF bool_expression THEN instructions ELSE instructions
 ;
 
-assign_statement: IDENT ASSIGN num_expression SEPARATOR;
+assign_statement: IDENT ASSIGN num_expression;
 
 input_statement: READ IDENT;
 
