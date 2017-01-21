@@ -57,7 +57,7 @@ assignment 		":="
 {bracket}						{ return yytext[0]; }
 {separator}						{ return SEPARATOR; }
 {assignment}					{ return ASSIGN; }
-{number}+ 						{ yylval.int_value = atoi(yytext); return NUMBER; }
+{number}+ 						{ yylval.value = atoi(yytext); return NUMBER; }
 {identifier}      				{ yylval.string_value = strdup(yytext); return IDENT; }
 {endl}							{ ++line_number; }
 .								{}
