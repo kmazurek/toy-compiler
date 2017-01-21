@@ -21,7 +21,7 @@ void yyerror(const char *err_msg);
 
 %token <int_value> NUMBER
 %token <string_value> IDENT
-%token AND ASSIGN DO ELSE END EXIT IF NOT PRINT READ SEPARATOR START THEN WHILE
+%token AND ASSIGN DO ELSE END EXIT IF NOT OR PRINT READ SEPARATOR START THEN WHILE
 
 %%
 
@@ -42,7 +42,7 @@ input_statement: READ IDENT;
 output_statement: PRINT expression;
 
 instruction: EXIT
-	| START instruction_chain END
+	| START instructions END
 	| while_statement
 	| if_statement
 	| assign_statement
@@ -50,12 +50,8 @@ instruction: EXIT
 	| output_statement
 ;
 
-instruction_chain: instruction_chain instruction SEPARATOR
+instructions: instructions instruction
 	| instruction
-;
-
-instructions:
-	| instructions instruction SEPARATOR
 ;
 
 expression: NUMBER
