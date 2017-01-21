@@ -1,4 +1,4 @@
-CC=gcc
+CC=gcc -g -std=c99
 CFLAGS=-lfl
 OBJ= aug_parser.o aug_lexer.o
 
