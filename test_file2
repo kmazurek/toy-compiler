@@ -1,1 +1,15 @@
-stuff := 2;
+read i;
+if i<0 then start
+ j:=1;
+ while j<i do start
+ j:=j*i;
+ i:=i-1;
+ end;
+ print j;
+end;
+
+i:=2+3;
+while true do start
+ j:=j*i;
+ i:=i-1;
+ end;
