@@ -29,6 +29,54 @@ struct expr {
   };
 };
 
+int var_number = 0;
+
+struct kv_pair {
+    struct kv_pair* next;
+    char* key;
+    long long int value;
+};
+
+#define HASHSIZE 101
+static struct kv_pair* hashtab[HASHSIZE];
+
+unsigned hash(char* s) {
+    unsigned hashval;
+
+    for (hashval = 0; *s != '\0'; s++)
+      hashval = *s + 31 * hashval;
+
+    return hashval % HASHSIZE;
+}
+
+struct kv_pair* lookup(char* s) {
+    struct kv_pair* kv;
+    for (kv = hashtab[hash(s)]; kv != NULL; kv = kv->next)
+        if (strcmp(s, kv->key) == 0)
+          return kv;
+
+    return NULL;
+}
+
+struct kv_pair* put(char* key, char* value) {
+    struct kv_pair* kv;
+    unsigned hashval;
+    if ((kv = lookup(key)) == NULL) {
+        kv = (struct kv_pair *) malloc(sizeof(*kv));
+
+        if (kv == NULL || (kv->key = strdup(key)) == NULL)
+          return NULL;
+
+        hashval = hash(key);
+        kv->next = hashtab[hashval];
+        hashtab[hashval] = kv;
+
+        ++var_number;
+    }
+
+    return kv;
+}
+
 /* zmienne i funkcje pomocnicze */
 long long int variables[255];    		// tablica warto¶ci zmiennych
 struct expr* expressions[255];			// tablica drzew wyra¿eñ
@@ -121,12 +169,32 @@ void yyerror(const char* err_msg) {
   exit(1);
 }
 
-int evaluate(struct expr* expr) {
-	if (expr == NULL) {
-		fprintf(stderr, "Incorrect expression on line %d\n", line_number);
-		exit(1);
-	}
-}
+// int evaluate(struct expr* expr) {
+// 	if (expr == NULL) {
+// 		fprintf(stderr, "Incorrect expression on line %d\n", line_number);
+// 		exit(1);
+// 	}
+
+// 	int lhs_arg=0, rhs_arg=0;
+
+// 	switch (expr->type) {
+// 		case constant:
+// 			return expr->value;
+// 		case identifier:
+// 			// get value from dictionary
+// 		case operation:
+// 			if(expr->operation.arg1 != NULL) lhs_arg=evaluate(expr->operation.arg1);
+// 	 		if(expr->operation.arg2 != NULL) rhs_arg=evaluate(expr->operation.arg2);
+
+// 			switch (expr->operation.operator) {
+// 				case '+': return lhs_arg+rhs_arg;
+// 	   			case '-': return lhs_arg+rhs_arg;
+// 	   			case '*': return lhs_arg+rhs_arg;
+// 	   			case '/': return lhs_arg+rhs_arg;
+// 	   			case '%': return lhs_arg+rhs_arg;
+// 			}
+// 	}
+// }
 
 int main(int argc, char** args) {
 	FILE* input_file;
