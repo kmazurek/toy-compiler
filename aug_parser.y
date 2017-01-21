@@ -3,43 +3,43 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* funkcje i zmienne z flexa */
+void yyerror(const char *err_msg);
 extern int yylex();
 extern int yyparse();
 
+extern char* yytext;
 extern FILE *yyin;
 
-void yyerror(const char *err_msg);
+extern int line_number;
 %}
 
 %union {
+  int bool_value;
   signed long long int 	int_value;
   char* string_value;
 }
 
 %error-verbose
 
+%token AND ASSIGN DO ELSE END EXIT IF NOT OR PRINT READ SEPARATOR START THEN WHILE
+
+%token <bool_value> TRUE_VAL FALSE_VAL
 %token <int_value> NUMBER
 %token <string_value> IDENT
-%token AND ASSIGN DO ELSE END EXIT IF NOT OR PRINT READ SEPARATOR START THEN WHILE
+
+%left '+' '-' '*' '/' '%'
+%left "=" "<" ">" "<=" ">="
+%left '(' ')'
+
+%start program
 
 %%
 
 program: instructions;
 
-while_statement: WHILE expression DO instructions
-	| DO instructions WHILE expression
+instructions: instructions instruction SEPARATOR
+	| instruction
 ;
-
-if_statement: IF expression THEN instructions
-	| IF expression THEN instructions ELSE instructions
-;
-
-assign_statement: IDENT ASSIGN expression;
-
-input_statement: READ IDENT;
-
-output_statement: PRINT expression;
 
 instruction: EXIT
 	| START instructions END
@@ -50,23 +50,36 @@ instruction: EXIT
 	| output_statement
 ;
 
-instructions: instructions instruction
-	| instruction
+num_operator: '+' | '-' | '*' | '/' | '%';
+
+num_expression: NUMBER
+	| num_expression num_operator num_expression
+	| IDENT
 ;
 
-expression: NUMBER
-	| IDENT
-	| expression '=' expression
-	| expression '<' expression
-	| expression '>' expression
-	| expression "<=" expression
-	| expression ">=" expression
-	| expression '+' expression
-	| expression '-' expression
-	| expression '*' expression
-	| expression '/' expression
-	| expression '%' expression
+bool_operator: AND | OR;
+bool_relation: "=" | "<" | ">" | "<=" | ">=";
+
+bool_expression: TRUE_VAL
+	| FALSE_VAL
+	| NOT bool_expression
+	| bool_expression bool_operator bool_expression
+	| num_expression bool_relation num_expression
 ;
+
+while_statement: WHILE bool_expression DO instructions
+	| DO instructions WHILE bool_expression
+;
+
+if_statement: IF bool_expression THEN instructions
+	| IF bool_expression THEN instructions ELSE instructions
+;
+
+assign_statement: IDENT ASSIGN num_expression SEPARATOR;
+
+input_statement: READ IDENT;
+
+output_statement: PRINT num_expression;
 
 // snazzle:
 // 	snazzle NUMBER      	{ fprintf(stdout, "found a number: %lld\n", $2); }
@@ -79,7 +92,7 @@ expression: NUMBER
 
 void yyerror(const char* err_msg)
 {
-  fprintf(stderr, "Parse error: %s\n", err_msg);
+  fprintf(stderr, "%s: %s on line %d\n", err_msg, yytext, line_number);
   exit(1);
 }
 
