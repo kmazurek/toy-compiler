@@ -26,6 +26,7 @@ not_op 			"not"
 do_op 			"do"
 else_op 		"else"
 if_op 			"if"
+then_op			"then"
 while_op		"while"
 
 print_op		"print"
@@ -49,6 +50,7 @@ exit_op			"exit"
 {do_op}							{ return DO; }
 {else_op}						{ return ELSE; }
 {if_op}							{ return IF; }
+{then_op}						{ return THEN; }
 {while_op}						{ return WHILE; }
 
 {print_op}						{ return PRINT; }
