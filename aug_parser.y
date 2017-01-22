@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -83,6 +84,19 @@ struct kv_pair* hashtab_put(char* key, long long int value) {
     return kv;
 }
 
+unsigned output_line_num = 1;
+
+void write_to_output(const char* format, ...) {
+	va_list args;
+
+	va_start(args, format);
+	fprintf(output_file, "%d ", output_line_num);
+	vfprintf(output_file, format, args);
+	va_end(args);
+
+	++output_line_num;
+}
+
 char* get_var_address(char* var_name) {
 	unsigned index = hashtab_lookup(var_name)->index;
 	char buffer[12];
@@ -90,16 +104,8 @@ char* get_var_address(char* var_name) {
     return strdup(buffer);
 }
 
-/* zmienne i funkcje pomocnicze */
-long long int variables[255];    		// tablica warto¶ci zmiennych
-struct expr* expressions[255];			// tablica drzew wyra¿eñ
+void evaluate(struct expr*);
 
-int dict_get(char);	// pobierz warto¶æ ze s³ownika zmiennych lub wyra¿eñ
-void dict_insert_var(char, int);	// wpisz now± warto¶æ do s³ownika zmiennych
-void dict_insert_expr(char, struct expr*); // zapamiêtaj wyra¿enie
-
-int evaluate(struct expr*);		// wyznacz warto¶æ wyra¿enia
-void delete_expr(struct expr*); // usuñ drzewo wyra¿enia (rekursywnie)
 %}
 
 %union {
@@ -179,21 +185,20 @@ if_statement: IF bool_expression THEN instructions
 	| IF bool_expression THEN instructions ELSE instructions
 ;
 
-assign_statement: IDENT ASSIGN num_expression
-	{
-		long long int value = evaluate($3);
-		hashtab_put($1, value);
-	}
-;
+assign_statement: IDENT ASSIGN num_expression {
+	evaluate($3);
+	hashtab_put($1, 0);
+	write_to_output("POP %s\n", get_var_address($1));
+};
 
 input_statement: READ IDENT {
 	hashtab_put($2, 0);
-	fprintf(output_file, "READ\n");
-	fprintf(output_file, "POP %s\n", get_var_address($2));
+	write_to_output("READ\n");
+	write_to_output("POP %s\n", get_var_address($2));
 };
 
 output_statement: PRINT num_expression {
-	fprintf(output_file, "PRINT %s\n", get_var_address($2->name));
+	write_to_output("PRINT %s\n", get_var_address($2->name));
 };
 
 %%
@@ -203,29 +208,39 @@ void yyerror(const char* err_msg) {
   exit(1);
 }
 
-int evaluate(struct expr* expr) {
+void evaluate(struct expr* expr) {
 	if (expr == NULL) {
 		fprintf(stderr, "Incorrect expression on line %d\n", line_number);
 		exit(1);
 	}
 
-	int lhs_arg=0, rhs_arg=0;
-
 	switch (expr->type) {
 		case constant:
-			return expr->value;
+			write_to_output("PUSH %lld\n", expr->value);
+			break;
 		case identifier:
-			return (hashtab_lookup(expr->name))->value;
+			write_to_output("PUSH %s\n", get_var_address(expr->name));
+			break;
 		case operation:
-			if(expr->op.arg1 != NULL) lhs_arg=evaluate(expr->op.arg1);
-	 		if(expr->op.arg2 != NULL) rhs_arg=evaluate(expr->op.arg2);
+			if(expr->op.arg1 != NULL) evaluate(expr->op.arg1);
+	 		if(expr->op.arg2 != NULL) evaluate(expr->op.arg2);
 
 			switch (expr->op.operator) {
-				case '+': return lhs_arg+rhs_arg;
-	   			case '-': return lhs_arg-rhs_arg;
-	   			case '*': return lhs_arg*rhs_arg;
-	   			case '/': return lhs_arg/rhs_arg;
-	   			case '%': return lhs_arg%rhs_arg;
+				case '+':
+					write_to_output("ADD\n");
+					break;
+	   			case '-':
+	   				write_to_output("SUB\n");
+	   				break;
+	   			case '*':
+	   				write_to_output("MUL\n");
+	   				break;
+	   			case '/':
+	   				write_to_output("DIV\n");
+	   				break;
+	   			case '%':
+	   				write_to_output("REM\n");
+	   				break;
 			}
 	}
 }
