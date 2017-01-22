@@ -54,8 +54,8 @@ assignment 		":="
 "true"							{ return TRUE_VAL; }
 "false"							{ return FALSE_VAL; }
 
-{num_operator}					{ yylval.num_oper = yytext[0]; return NUM_OPERATOR; }
-{bool_relation}					{ return yytext[0]; }
+{num_operator}					{ yylval.num_operator = yytext[0]; return NUM_OPERATOR; }
+{bool_relation}					{ yylval.string_value = strdup(yytext); return BOOL_RELATION; }
 {bracket}						{ return yytext[0]; }
 {separator}						{ return SEPARATOR; }
 {assignment}					{ return ASSIGN; }

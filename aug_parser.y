@@ -17,17 +17,17 @@ extern int line_number;
 
 FILE* output_file;
 
-typedef enum {constant, identifier, operation} node_type;
+typedef enum {constant, identifier, expression} node_type;
 
-struct expr {
+struct ast_node {
   node_type type;
   union {
     long long int value;
     char* name;
     struct {
       char operator;
-      struct expr* arg1;
-      struct expr* arg2;
+      struct ast_node* arg1;
+      struct ast_node* arg2;
     } op;
   };
 };
@@ -104,15 +104,16 @@ char* get_var_address(char* var_name) {
     return strdup(buffer);
 }
 
-void evaluate(struct expr*);
+void evaluate(struct ast_node*);
+void evaluate_bool_rel(struct ast_node*, char*);
 
 %}
 
 %union {
-	char num_oper;
+	char num_operator;
 	long long int value;
 	char* string_value;
-	struct expr* expr_value;
+	struct ast_node* expr_value;
 }
 
 %error-verbose
@@ -121,7 +122,8 @@ void evaluate(struct expr*);
 
 %token <value> NUMBER TRUE_VAL FALSE_VAL
 %token <string_value> IDENT
-%token <num_oper> NUM_OPERATOR
+%token <num_operator> NUM_OPERATOR
+%token <string_value> BOOL_RELATION
 
 %type <expr_value> num_expression
 %type <expr_value> bool_expression
@@ -150,34 +152,33 @@ instruction: EXIT SEPARATOR
 ;
 
 num_expression: NUMBER {
-		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$ = (struct ast_node*)malloc(sizeof(struct ast_node));
 		$$->type = constant;
 		$$->value = $1;
 	}
 	| num_expression NUM_OPERATOR num_expression {
-		$$ = (struct expr*)malloc(sizeof(struct expr));
-		$$->type = operation;
+		$$ = (struct ast_node*)malloc(sizeof(struct ast_node));
+		$$->type = expression;
 		$$->op.arg1 = $1;
 		$$->op.operator = $2;
 		$$->op.arg2 = $3;
 	}
 	| IDENT {
-		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$ = (struct ast_node*)malloc(sizeof(struct ast_node));
 		$$->type = identifier;
 		$$->name = $1;
 	}
 ;
 
-bool_operator: AND | OR;
-bool_relation: '=' | '<' | '>';
+bool_operator: AND | OR; // replace with & and | in parser and treat as an operator?
 
 bool_expression: TRUE_VAL {
-		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$ = (struct ast_node*)malloc(sizeof(struct ast_node));
 		$$->type = constant;
 		$$->value = 1;
 	}
 	| FALSE_VAL {
-		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$ = (struct ast_node*)malloc(sizeof(struct ast_node));
 		$$->type = constant;
 		$$->value = 0;
 	}
@@ -185,8 +186,17 @@ bool_expression: TRUE_VAL {
 		evaluate($2);
 		write_to_output("NEG\n");
 	}
-	| bool_expression bool_operator bool_expression
-	| num_expression bool_relation num_expression
+	| bool_expression bool_operator bool_expression {
+		// TODO
+	}
+	| num_expression BOOL_RELATION num_expression {
+		$$ = (struct ast_node*)malloc(sizeof(struct ast_node));
+		$$->type = expression;
+		$$->op.arg1 = $1;
+		$$->op.arg2 = $3;
+
+		evaluate_bool_rel($$, $2);
+	}
 ;
 
 while_statement: WHILE bool_expression DO instructions
@@ -220,24 +230,24 @@ void yyerror(const char* err_msg) {
   exit(1);
 }
 
-void evaluate(struct expr* expr) {
-	if (expr == NULL) {
-		fprintf(stderr, "Incorrect expression on line %d\n", line_number);
+void evaluate(struct ast_node* node) {
+	if (node == NULL) {
+		fprintf(stderr, "Incorrect numeric expression on line %d\n", line_number);
 		exit(1);
 	}
 
-	switch (expr->type) {
+	switch (node->type) {
 		case constant:
-			write_to_output("PUSH %lld\n", expr->value);
+			write_to_output("PUSH %lld\n", node->value);
 			break;
 		case identifier:
-			write_to_output("PUSH %s\n", get_var_address(expr->name));
+			write_to_output("PUSH %s\n", get_var_address(node->name));
 			break;
-		case operation:
-			if(expr->op.arg1 != NULL) evaluate(expr->op.arg1);
-	 		if(expr->op.arg2 != NULL) evaluate(expr->op.arg2);
+		case expression:
+			if(node->op.arg1 != NULL) evaluate(node->op.arg1);
+	 		if(node->op.arg2 != NULL) evaluate(node->op.arg2);
 
-			switch (expr->op.operator) {
+			switch (node->op.operator) {
 				case '+':
 					write_to_output("ADD\n");
 					break;
@@ -254,6 +264,30 @@ void evaluate(struct expr* expr) {
 	   				write_to_output("REM\n");
 	   				break;
 			}
+	}
+}
+
+void evaluate_bool_rel(struct ast_node* node, char* rel_operator) {
+	if (node == NULL) {
+		fprintf(stderr, "Incorrect boolean expression on line %d\n", line_number);
+		exit(1);
+	}
+
+	if (node->type == expression) {
+		if(node->op.arg1 != NULL) evaluate(node->op.arg1);
+	 	if(node->op.arg2 != NULL) evaluate(node->op.arg2);
+
+	 	if (strcmp(rel_operator, "=") == 0) {
+	 		// JZ
+	 	} else if (strcmp(rel_operator, ">") == 0) {
+	 		// JLEZ
+	 	} else if (strcmp(rel_operator, "<") == 0) {
+	 		// JGEZ
+	 	} else if (strcmp(rel_operator, ">=") == 0) {
+	 		// JLZ
+	 	} else if (strcmp(rel_operator, "<=") == 0) {
+	 		// JGZ
+	 	}
 	}
 }
 
