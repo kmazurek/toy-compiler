@@ -268,6 +268,8 @@ int main(int argc, char** args) {
 		yyparse();
 	} while (!feof(yyin));
 
+	write_to_output("STOP");
+
 	fclose(input_file);
 	fclose(output_file);
 	return 0;
