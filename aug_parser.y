@@ -186,7 +186,11 @@ assign_statement: IDENT ASSIGN num_expression
 	}
 ;
 
-input_statement: READ IDENT { fprintf(output_file, "READ\n"); };
+input_statement: READ IDENT {
+	hashtab_put($2, 0);
+	fprintf(output_file, "READ\n");
+	fprintf(output_file, "POP %s\n", get_var_address($2));
+};
 
 output_statement: PRINT num_expression {
 	fprintf(output_file, "PRINT %s\n", get_var_address($2->name));
