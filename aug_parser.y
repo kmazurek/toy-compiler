@@ -170,9 +170,20 @@ num_expression: NUMBER {
 bool_operator: AND | OR;
 bool_relation: '=' | '<' | '>';
 
-bool_expression: TRUE_VAL
-	| FALSE_VAL
-	| NOT bool_expression
+bool_expression: TRUE_VAL {
+		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$->type = constant;
+		$$->value = 1;
+	}
+	| FALSE_VAL {
+		$$ = (struct expr*)malloc(sizeof(struct expr));
+		$$->type = constant;
+		$$->value = 0;
+	}
+	| NOT bool_expression {
+		evaluate($2);
+		write_to_output("NEG\n");
+	}
 	| bool_expression bool_operator bool_expression
 	| num_expression bool_relation num_expression
 ;
