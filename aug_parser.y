@@ -31,10 +31,11 @@ struct expr {
   };
 };
 
-int var_number = 0;
+unsigned var_number = 0;
 
 struct kv_pair {
     struct kv_pair* next;
+    unsigned index;
     char* key;
     long long int value;
 };
@@ -70,6 +71,8 @@ struct kv_pair* hashtab_put(char* key, long long int value) {
           return NULL;
 
         hashval = hash(key);
+        kv->index = var_number;
+        kv->key = key;
         kv->next = hashtab[hashval];
         kv->value = value;
         hashtab[hashval] = kv;
@@ -78,6 +81,13 @@ struct kv_pair* hashtab_put(char* key, long long int value) {
     }
 
     return kv;
+}
+
+char* get_var_address(char* var_name) {
+	unsigned index = hashtab_lookup(var_name)->index;
+	char buffer[12];
+    snprintf(buffer, sizeof buffer, "$%d", index);
+    return strdup(buffer);
 }
 
 /* zmienne i funkcje pomocnicze */
@@ -178,7 +188,9 @@ assign_statement: IDENT ASSIGN num_expression
 
 input_statement: READ IDENT { fprintf(output_file, "READ\n"); };
 
-output_statement: PRINT num_expression { fprintf(output_file, "PRINT\n"); };
+output_statement: PRINT num_expression {
+	fprintf(output_file, "PRINT %s\n", get_var_address($2->name));
+};
 
 %%
 
