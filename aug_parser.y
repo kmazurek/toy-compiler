@@ -124,6 +124,7 @@ void evaluate(struct expr*);
 %token <num_oper> NUM_OPERATOR
 
 %type <expr_value> num_expression
+%type <expr_value> bool_expression
 
 %left '+' '-' '*' '/' '%'
 %left '=' '<' '>'
